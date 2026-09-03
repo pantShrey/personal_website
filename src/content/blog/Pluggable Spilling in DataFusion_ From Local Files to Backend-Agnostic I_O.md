@@ -12,9 +12,9 @@ tags:
 
 Hello Everyone, I’m Shrey. I’m writing these posts to document my work and turn individual engineering tasks into stories that I can explain clearly later. This one is about a contribution to Apache DataFusion that started as an extension-point problem and grew into a change spanning the spill abstraction, Arrow IPC, asynchronous reads, memory accounting, and parts of Sort-Merge Join.
 
-I was still fairly early in my software-engineering journey (still am) when I worked on this. What made the contribution valuable was not just the final API. It was the process of finding where the original assumption lived, proposing something that seemed reasonable, having reviewers point out where it would break, and then following those problems through the code until the design became more general.
+What made the contribution valuable was not just the final API. It was the process of finding where the original assumption lived, proposing something that seemed reasonable, having reviewers point out where it would break, and then following those problems through the code until the design became more general.
 
-DataFusion’s spill files were built around local filesystem paths. PostgreSQL’s `BufFile` mechanism does not expose an ordinary path. That became a problem while I was trying to contribute support for `BufFile`-backed spilling to ParadeDB.[1]
+DataFusion’s spill files were built around local filesystem paths. PostgreSQL’s `BufFile` mechanism does not expose an ordinary path. That became a problem while I was trying to contribute support for `BufFile`-backed spilling to ParadeDB.[ParadeDB #4064][1]
 
 This is the story of how I traced that problem upstream, how the proposed extension point changed, and why the final contribution ended up being more than “replace one file type with a trait.”
 
@@ -26,7 +26,7 @@ The final design uses asynchronous reads and synchronous writes. Reads expose an
 
 ## How I encountered the problem
 
-I wanted to contribute to ParadeDB’s issue about adding `BufFile`-backed spilling. PostgreSQL extensions have to work within PostgreSQL’s own resource-management model, including temporary tablespaces, `temp_file_limit`, and cleanup tied to PostgreSQL’s execution lifecycle.[1]
+I wanted to contribute to ParadeDB’s issue about adding `BufFile`-backed spilling. PostgreSQL extensions have to work within PostgreSQL’s own resource-management model, including temporary tablespaces, `temp_file_limit`, and cleanup tied to PostgreSQL’s execution lifecycle.[ParadeDB #4064][1]
 
 While investigating how ParadeDB could provide a different spilling backend, I started looking for the extension point in DataFusion. I initially expected that the main task would be to configure `DiskManager` with a different temporary-file creator. That was only part of the problem.
 
@@ -94,13 +94,15 @@ At that point, I was still thinking about both directions as ordinary `Read` and
 
 The first issue was that `std::io::Read` and `std::io::Write` are synchronous interfaces. They work naturally for local files, but they are not a good universal boundary for a backend whose natural operations are asynchronous. An object store or a database-managed temporary-file service may need to wait on I/O rather than block a thread.
 
-The old DataFusion read path already showed why this mattered. The spill manager ultimately exposed an asynchronous stream of record batches, but the underlying implementation started from a synchronous file reader and a pull-based Arrow IPC reader. That mismatch required a hand-written state machine. The reader performed blocking work in spawned blocking tasks and returned one batch at a time.
+The old DataFusion read path already showed why this mattered. At the public boundary, the old `SpillReaderStream` was an asynchronous `RecordBatchStream`. Internally, however, each poll used a synchronous `StreamReader<BufReader<File>>` and `SpawnedTask::spawn_blocking` to read one batch at a time. That mismatch required a hand-written state machine: the code had to move between a blocking task and the async stream while preserving the reader between polls.
 
 The comment on the original implementation described the reason for that structure:
 
-> Stream that reads spill files from disk where each batch is read in a spawned blocking task. It will read one batch at a time and will not do any buffering, to buffer data use `spawn_buffered`.A simpler solution would be spawning a long-running blocking task for each file read. This approach does not work because when the number of concurrent reads exceeds the Tokio thread pool limit, deadlocks can occur and block progress.
+> Stream that reads spill files from disk where each batch is read in a spawned blocking task. It will read one batch at a time and will not do any buffering; to buffer data use `spawn_buffered`.
+>
+> A simpler solution would be spawning a long-running blocking task for each file read. This approach does not work because when the number of concurrent reads exceeds the Tokio thread pool limit, deadlocks can occur and block progress.
 
-The problem was not just that the reader was synchronous. It was that synchronous reading had been pushed through an asynchronous interface using a state machine and a limited blocking thread pool. The existing approach avoided one failure mode, but it made the read path harder to reason about and left the backend abstraction tied to local blocking I/O.[3]
+The problem was not simply that the reader was synchronous. It was that synchronous local-file reading had to be pushed through an asynchronous interface using a state machine and a limited blocking thread pool. The design avoided the more dangerous long-running-task pattern described in the comment, but it made the read path harder to reason about and left the backend abstraction tied to local blocking I/O.[DataFusion #21882][3]
 
 The second issue was buffer ownership. A writer that accepts a borrowed slice cannot hold that slice after the call returns unless it copies the data. A backend that wants to queue chunks for an asynchronous upload task needs an owned value that can outlive the call.
 
@@ -124,13 +126,13 @@ fn read_stream(
 ) -> Result<Pin<Box<dyn Stream<Item = Result<Bytes>> + Send>>>;
 ```
 
-The new system could then be asynchronous and push-based from the beginning rather than starting with a synchronous reader and adapting it into a stream.
+The byte-source and decoder path could then be asynchronous and push-oriented, while callers still consumed the resulting record-batch stream through `poll_next()`. That removed the need to adapt a synchronous file reader into the backend-facing read path.
 
 ## The Arrow IPC part: moving from pull to push
 
 The asynchronous read path used Arrow’s `StreamDecoder`. The decoder accepts incoming byte chunks and produces decoded record batches. That fit the new spill interface better than opening a synchronous `StreamReader` for each file.
 
-There was one missing Arrow feature. DataFusion controls the IPC data that it writes for its own spill files, so it can use a trusted-input mode that skips validation. At the time, `StreamDecoder` did not expose the same `with_skip_validation` option available in related readers. I opened a separate Arrow change to add it.[2]
+There was one missing Arrow feature. DataFusion controls the IPC data that it writes for its own spill files, so it can use a trusted-input mode that skips validation. At the time, `StreamDecoder` did not expose the same `with_skip_validation` option available in related readers. I opened a separate Arrow change to add it.[arrow-rs #9749][2]
 
 ```rust
 /// # Safety
@@ -165,7 +167,7 @@ With a push-based decoder, the IPC header arrives as part of the byte stream. Th
 
 That was a small-looking change, but it was part of converting the read path from “construct a reader and ask it for metadata” to “feed bytes into a decoder and react as data arrives.”
 
-The trade-off was that the decoder already had a scratch buffer, while the asynchronous source also produced chunks. On each poll, bytes from the stream have to be made available to the decoder, and newly received bytes are held in the stream-side buffer until they can be consumed. The design removes the old blocking-reader state machine, but it does not make buffering disappear.
+The trade-off was that the asynchronous source produced byte chunks while the decoder maintained its own scratch buffer. The stream temporarily holds the current chunk, and `StreamDecoder` consumes it; when a chunk ends in the middle of an IPC message, the decoder retains the incomplete bytes in its internal scratch buffer and the next poll fetches more data. Compared with the old `StreamReader` path, this introduces extra byte movement or copying, even though it does not mean that every complete chunk is copied wholesale.
 
 A reviewer called out exactly that concern during discussion: decoding now required an additional copy or buffering step. That concern was valid. The question became whether the extra buffering was acceptable in exchange for a backend-neutral asynchronous read path.
 
@@ -194,7 +196,7 @@ The final split was therefore:
 | Read | `Stream<Item = Result<Bytes>>` | Backends may need native asynchronous reads. |
 | Decode | `StreamDecoder` | It consumes pushed byte chunks and produces record batches. |
 
-The asynchronous writer question remained follow-up work and was tracked separately in [5].
+The asynchronous writer question remained follow-up work and was tracked separately in [DataFusion #23247][5].
 
 ## The final API and the factory extension point
 
@@ -238,7 +240,7 @@ That factory pattern is useful here because DataFusion does not need to know whe
 
 ## Implementing the local backend
 
-The first DataFusion implementation changed the internal spill type from `RefCountedTempFile` to `Arc<dyn SpillFile>`. The goal was not to throw away the local implementation. It was to make the existing local backend satisfy the new contract while allowing a PostgreSQL or object-store backend to provide another implementation.[4]
+The first DataFusion implementation changed the internal spill type from `RefCountedTempFile` to `Arc<dyn SpillFile>`. The goal was not to throw away the local implementation. It was to make the existing local backend satisfy the new contract while allowing a PostgreSQL or object-store backend to provide another implementation.[DataFusion #21882][3]
 
 Conceptually, the local implementation became:
 
@@ -290,15 +292,13 @@ The working hypothesis was that the old reader often consumed a complete IPC fra
 
 ## A partial Sort-Merge Join migration
 
-The core spill abstraction was not the only place that assumed local synchronous files. Two spill-reading paths in Sort-Merge Join:`materializing_stream.rs` and `bitwise_stream.rs`:were still using direct file access or `open_sync_reader()`. They were not using the SpillManager API to obtain the new asynchronous spill stream.[4]
+The core spill abstraction was not the only place that assumed local synchronous files. Two spill-reading paths in Sort-Merge Join:`materializing_stream.rs` and `bitwise_stream.rs`: were still using direct file access or `open_sync_reader()`. They were not using the SpillManager API to obtain the new asynchronous spill stream.[DataFusion #22230][4]
 
-Thankfully, the change was limited to the spill-reading portions in these files that bypassed the abstraction and not the entire Sort-Merge Join operator. 
+Thankfully, the change was limited to the spill-reading portions in these files that bypassed the abstraction and not the entire Sort-Merge Join operator.
 
 By this point, a significant amount of time had already gone into the pluggable-spill PR. I initially considered adding an `open_sync_reader()` escape hatch to `SpillFile` as an interim step. That would have let the main change merge while leaving the two Sort-Merge Join paths for later. It would also have left a synchronous method in an abstraction intended to support pathless and asynchronous backends.
 
-After a brief back-and-forth with Andrew, I decided to start working on the Sort-Merge Join migration in parallel. The same shortcut-versus-fix decision appeared here as it had in the writer design: keeping the escape hatch would have made the first merge easier, but it would have preserved the old assumption in the new API.
-
-I then changed the affected paths in parallel. In `materializing_stream.rs`, spilled `BufferedBatch` values were restored through the SpillManager’s asynchronous spill-stream API before the materialized state was frozen. In `bitwise_stream.rs`, the old synchronous reads were replaced with polling of the `SendableRecordBatchStream` returned by `spill_manager.read_spill_as_stream(...)`. Because the code already ran inside `poll_next()`, the active stream and progress state had to remain in the operator across `Poll::Pending`.
+After a brief back-and-forth with Andrew, I decided to start working on the Sort-Merge Join migration in parallel. In `materializing_stream.rs`, spilled `BufferedBatch` values were restored through the SpillManager’s asynchronous spill-stream API before the materialized state was frozen. In `bitwise_stream.rs`, the old synchronous reads were replaced with polling of the `SendableRecordBatchStream` returned by `spill_manager.read_spill_as_stream(...)`. Because the code already ran inside `poll_next()`, the active stream and progress state had to remain in the operator across `Poll::Pending`.
 
 A synchronous `for` loop inside `poll_next()` cannot simply become `.await`. The important state had to be stored explicitly and resumed later. That was the main async-Rust lesson in this part of the change.
 
@@ -378,11 +378,11 @@ A rollback test checked that a failed write did not permanently inflate the glob
 
 ## Review, follow-up work, and merge
 
-The review covered API compatibility, allocation behavior, error semantics, buffering, and benchmark results. It also resulted in an upgrade-guide entry because downstream code could be affected by the new public types and disk-manager mode.[3]
+The review covered API compatibility, allocation behavior, error semantics, buffering, and benchmark results. It also resulted in an upgrade-guide entry because downstream code could be affected by the new public types and disk-manager mode.[DataFusion #21882][3]
 
-The maintainers asked for a concrete example of a user-defined backend. An ObjectStore-backed example was developed separately in [6]. That example was useful because it tested whether the abstraction supported a backend that did not naturally behave like a local file.
+An ObjectStore-backed example was developed separately in [DataFusion #23170][6]. That example was useful because it tested whether the abstraction supported a backend that did not naturally behave like a local file.
 
-The main pluggable-spill change eventually merged as [3]. The separate Sort-Merge Join migration made the core change easier to review, while the object-store example demonstrated how a downstream backend could use the extension point.
+The main pluggable-spill change eventually merged as [DataFusion #21882][3]. The separate Sort-Merge Join migration made the core change easier to review, while the object-store example demonstrated how a downstream backend could use the extension point.
 
 I also got a mention in the DataFusion 55 release blog, which was a nice outcome after spending so much time in low-level implementation and review details.
 
@@ -390,7 +390,7 @@ I also got a mention in the DataFusion 55 release blog, which was a nice outcome
 
 One of the enjoyable parts of this work was not only writing the code. It was triaging the problem, coming up with a solution, finding the places where the solution did not fit, and discussing those details with reviewers and maintainers. The review process changed the API for the better, but it was also genuinely fun to interact with people who care about the same systems problems.
 
-I am writing this as someone who is still building experience as a software engineer and learning how to contribute to large open-source projects. If any part of the explanation is unclear or technically inaccurate, feedback is welcome. If you are interested in Rust, Arrow, query engines, or database internals, the [8] is a good place to start.
+I am writing this as someone who is still early career and building experience as a software engineer and learning how to contribute to large open-source projects. If any part of the explanation is unclear or technically inaccurate, feedback is welcome. If you are interested in Rust, Arrow, query engines, or database internals, the [DataFusion community page][8] is a good place to start.
 
 ## References
 
@@ -408,7 +408,7 @@ I am writing this as someone who is still building experience as a software engi
 
 [7]: https://datafusion.apache.org/blog/output/2026/08/25/datafusion-55.0.0/#pluggable-spill-backends "Apache DataFusion blog"
 
-[8]: https://discord.com/channels/885562378132000778/885562378132000781 "Apache DataFusion community"
+[8]: https://discord.gg/Qw5gKqHxUM "Apache DataFusion community"
 
 1. [ParadeDB issue #4064 — JOINs: Add Support for Spilling to Disk](https://github.com/paradedb/paradedb/issues/4064)
 
@@ -424,6 +424,6 @@ I am writing this as someone who is still building experience as a software engi
 
 7. [Apache DataFusion blog](https://datafusion.apache.org/blog/output/2026/08/25/datafusion-55.0.0/#pluggable-spill-backends)
 
-8. [Apache DataFusion community](https://discord.com/channels/885562378132000778/885562378132000781)
+8. [Apache DataFusion community](https://discord.gg/Qw5gKqHxUM)
 
 ---
