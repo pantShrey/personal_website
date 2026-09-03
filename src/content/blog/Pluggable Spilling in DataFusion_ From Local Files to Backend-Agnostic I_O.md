@@ -390,7 +390,7 @@ I also got a mention in the DataFusion 55 release blog, which was a nice outcome
 
 One of the enjoyable parts of this work was not only writing the code. It was triaging the problem, coming up with a solution, finding the places where the solution did not fit, and discussing those details with reviewers and maintainers. The review process changed the API for the better, but it was also genuinely fun to interact with people who care about the same systems problems.
 
-I am writing this as someone who is still early career and building experience as a software engineer and learning how to contribute to large open-source projects. If any part of the explanation is unclear or technically inaccurate, feedback is welcome. If you are interested in Rust, Arrow, query engines, or database internals, the [DataFusion community page][8] is a good place to start.
+I am writing this as someone who is still early career and building experience as a software engineer and learning how to contribute to large open-source projects. If any part of the explanation is unclear or technically inaccurate, feedback is welcome. If you are interested in Rust, Arrow, query engines, or database internals, the [DataFusion/Arrow Discord][8] is a good place to start.
 
 ## References
 
@@ -408,22 +408,22 @@ I am writing this as someone who is still early career and building experience a
 
 [7]: https://datafusion.apache.org/blog/output/2026/08/25/datafusion-55.0.0/#pluggable-spill-backends "Apache DataFusion blog"
 
-[8]: https://discord.gg/Qw5gKqHxUM "Apache DataFusion community"
+[8]: https://discord.gg/Qw5gKqHxUM "Apache DataFusion/Arrow Discord"
 
-1. [ParadeDB issue #4064 — JOINs: Add Support for Spilling to Disk](https://github.com/paradedb/paradedb/issues/4064)
+1. [ParadeDB issue #4064 : JOINs: Add Support for Spilling to Disk](https://github.com/paradedb/paradedb/issues/4064)
 
-2. [arrow-rs #9749 — Add with_skip_validation to StreamDecoder](https://github.com/apache/arrow-rs/pull/9749)
+2. [arrow-rs #9749 : Add with_skip_validation to StreamDecoder](https://github.com/apache/arrow-rs/pull/9749)
 
-3. [DataFusion #21882 — Introduce pluggable SpillFile and TempFileFactory](https://github.com/apache/datafusion/pull/21882)
+3. [DataFusion #21882 : Introduce pluggable SpillFile and TempFileFactory](https://github.com/apache/datafusion/pull/21882)
 
-4. [DataFusion #22230 — Update SortMergeJoin to use async spill abstractions](https://github.com/apache/datafusion/pull/22230)
+4. [DataFusion #22230 : Update SortMergeJoin to use async spill abstractions](https://github.com/apache/datafusion/pull/22230)
 
-5. [DataFusion #23247 — Add an async API for spill file writing](https://github.com/apache/datafusion/issues/23247)
+5. [DataFusion #23247 : Add an async API for spill file writing](https://github.com/apache/datafusion/issues/23247)
 
-6. [DataFusion #23170 — ObjectStore-backed TempFileFactory / spill example](https://github.com/apache/datafusion/pull/23170)
+6. [DataFusion #23170 : ObjectStore-backed TempFileFactory / spill example](https://github.com/apache/datafusion/pull/23170)
 
 7. [Apache DataFusion blog](https://datafusion.apache.org/blog/output/2026/08/25/datafusion-55.0.0/#pluggable-spill-backends)
 
-8. [Apache DataFusion community](https://discord.gg/Qw5gKqHxUM)
+8. [Apache DataFusion/Arrow Discord](https://discord.gg/Qw5gKqHxUM)
 
 ---
