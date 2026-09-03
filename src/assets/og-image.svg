@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+	<rect width="1200" height="630" fill="#f4eee0"/>
+	<rect x="0" y="0" width="1200" height="630" fill="url(#grad)" opacity="0.5"/>
+	<defs>
+		<radialGradient id="grad" cx="0%" cy="0%" r="80%">
+			<stop offset="0%" stop-color="#e0d6bf"/>
+			<stop offset="100%" stop-color="#f4eee0" stop-opacity="0"/>
+		</radialGradient>
+	</defs>
+	<text x="90" y="260" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="700" fill="#2e261e">Shrey Pant</text>
+	<text x="90" y="330" font-family="'Courier New', monospace" font-size="34" fill="#8a5a2f">Systems Engineer — Rust · Databases · Async Runtimes</text>
+	<line x1="90" y1="380" x2="1110" y2="380" stroke="#d6c8b0" stroke-width="2" stroke-dasharray="6,6"/>
+	<text x="90" y="440" font-family="'Courier New', monospace" font-size="28" fill="#605446">Apache DataFusion · ParadeDB · Cats Effect · vilcacora</text>
+	<text x="90" y="560" font-family="'Courier New', monospace" font-size="24" fill="#8a5a2f">shreypant.vercel.app</text>
+</svg>
