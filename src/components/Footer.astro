@@ -1,0 +1,24 @@
+---
+const today = new Date();
+---
+
+<footer>
+	&copy; {today.getFullYear()} Shrey Pant ·
+	<a href="https://github.com/pantShrey">GitHub</a> ·
+	<a href="https://linkedin.com/in/shreypant">LinkedIn</a> .
+	<a href="/rss.xml" target="_blank">RSS </a>
+</footer>
+<style>
+	footer {
+		padding: 2em 1em;
+		color: rgb(var(--ink-light));
+		text-align: center;
+		font-size: 0.9em;
+	}
+	footer a {
+		color: rgb(var(--ink-light));
+	}
+	footer a:hover {
+		color: var(--accent-dark);
+	}
+</style>

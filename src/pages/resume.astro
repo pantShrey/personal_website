@@ -1,0 +1,71 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Resume | ${SITE_TITLE}`} description="Shrey Pant's resume : systems engineering, Rust, open source." />
+	</head>
+	<body>
+		<Header />
+		<main style="width: 700px; max-width: calc(100% - 2em); margin: auto; padding: 3em 1em;">
+			<h1>Resume</h1>
+			<p><a href="/resume.pdf">Download PDF</a></p>
+
+			<h2>Education</h2>
+			<p>
+				<strong>Rajiv Gandhi Institute of Petroleum Technology (RGIPT)</strong><br />
+				B.Tech, Computer Science and Engineering : CGPA 8.72/10.0 : June 2025
+			</p>
+
+			<h2>Experience</h2>
+			<p>
+				<strong>External Contributor (Compensated), ParadeDB</strong> : Feb 2026–present<br />
+				Remote : ongoing paid open-source work on Postgres search/vectorized execution
+			</p>
+			<p>
+				<strong>Freelance Developer, HelixDB</strong> : Oct–Dec 2025<br />
+				Remote : containerized orchestration layer, n8n integration suite
+			</p>
+			<p>
+				<strong>Google Summer of Code 2025, Typelevel</strong> : Jun–Sep 2025<br />
+				Remote, mentored by Arman Bilge : vilcacora (ML inference in Cats Effect)
+			</p>
+			<p>
+				<strong>Software Engineering Intern, Plotch</strong> : Jun–Oct 2024<br />
+				Remote : backend and search infrastructure
+			</p>
+
+			<h2>Skills</h2>
+			<p>
+				<strong>Systems & Internals:</strong> Database internals, query execution engines,
+				memory management, concurrency (Tokio, Cats Effect), FFI, compilers<br />
+				<strong>Languages:</strong> Rust, Scala, C++, C, Python<br />
+				<strong>Frameworks/Tech:</strong> Apache DataFusion, Apache Arrow, Cats Effect,
+				fs2, http4s, FastAPI, Django, Kubernetes, Helm, Docker, Podman, Redis
+			</p>
+
+			<p>See <a href="/work">Work</a> for the detailed version of the open-source contributions below.</p>
+
+			<h2>Selected open source</h2>
+			<ul>
+				<li>Apache DataFusion #21882, #22230 (merged); arrow-rs #9749 (merged)</li>
+				<li>ParadeDB #4219 (merged), #4306 (merged), #4343, #4413</li>
+				<li>Cats Effect #4352, #4380 (merged); #4388</li>
+				<li>HelixDB #659, #697 (merged)</li>
+			</ul>
+
+			<p>
+				<strong>Contact:</strong>
+				<a href="mailto:pantshrey01@gmail.com">pantshrey01@gmail.com</a> ·
+				<a href="https://github.com/pantShrey">GitHub</a> ·
+				<a href="https://linkedin.com/in/shreypant">LinkedIn</a>
+			</p>
+		</main>
+		<Footer />
+	</body>
+</html>

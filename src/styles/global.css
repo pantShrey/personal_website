@@ -1,0 +1,137 @@
+/*
+  Parchment / typewriter theme.
+  Base structure adapted from Astro's blog starter (Bear Blog CSS, MIT licensed).
+*/
+
+:root {
+	--accent: #8a5a2f;
+	--accent-dark: #5c3a1c;
+	--ink: 46, 38, 30;
+	--ink-light: 96, 84, 70;
+	--paper: 244, 238, 224;
+	--paper-edge: 224, 214, 191;
+	--rule: 214, 200, 176;
+	--box-shadow:
+		0 2px 6px rgba(var(--ink-light), 12%), 0 8px 24px rgba(var(--ink-light), 10%);
+}
+
+@font-face {
+	font-family: "Special Elite";
+	src: url("https://fonts.gstatic.com/s/specialelite/v18/XLYgIZbkc4JPUL5CVArUVL0ntn4LMKp9zdgU.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+body {
+	font-family: "Lora", Georgia, "Times New Roman", serif;
+	margin: 0;
+	padding: 0;
+	text-align: left;
+	background-color: rgb(var(--paper));
+	background-image:
+		radial-gradient(ellipse at top left, rgba(var(--paper-edge), 0.4), transparent 60%),
+		radial-gradient(ellipse at bottom right, rgba(var(--paper-edge), 0.4), transparent 60%);
+	background-attachment: fixed;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	color: rgb(var(--ink));
+	font-size: 19px;
+	line-height: 1.75;
+}
+main {
+	width: 700px;
+	max-width: calc(100% - 2em);
+	margin: auto;
+	padding: 3em 1em;
+}
+h1, h2, h3, h4, h5, h6 {
+	margin: 1.4em 0 0.6rem 0;
+	color: rgb(var(--ink));
+	line-height: 1.25;
+	font-family: "Special Elite", "Courier New", monospace;
+	font-weight: 400;
+	letter-spacing: 0.01em;
+}
+h1 {
+	font-size: 2.6em;
+	margin-top: 0;
+	border-bottom: 2px solid rgb(var(--rule));
+	padding-bottom: 0.3em;
+}
+h2 { font-size: 1.7em; }
+h3 { font-size: 1.35em; }
+h4 { font-size: 1.15em; }
+h5 { font-size: 1.05em; }
+strong, b { font-weight: 700; color: rgb(var(--ink)); }
+em, i { color: rgb(var(--ink-light)); }
+a {
+	color: var(--accent);
+	text-decoration-color: rgba(var(--rule), 0.9);
+	text-underline-offset: 3px;
+}
+a:hover { color: var(--accent-dark); }
+p { margin-bottom: 1.1em; }
+.prose p { margin-bottom: 1.6em; }
+textarea, input { font-size: 16px; font-family: inherit; }
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+th, td {
+	border: 1px solid rgb(var(--rule));
+	padding: 0.5em 0.8em;
+	text-align: left;
+}
+th {
+	font-family: "Special Elite", monospace;
+	background: rgba(var(--paper-edge), 0.5);
+}
+img { max-width: 100%; height: auto; border-radius: 4px; }
+code {
+	padding: 2px 6px;
+	background-color: rgba(var(--paper-edge), 0.6);
+	border-radius: 2px;
+	font-family: "IBM Plex Mono", "Courier New", monospace;
+	font-size: 0.9em;
+	color: rgb(var(--ink));
+}
+pre {
+	padding: 1.4em;
+	border-radius: 6px;
+	background-color: rgb(38, 32, 26) !important;
+	box-shadow: var(--box-shadow);
+	overflow-x: auto;
+}
+pre > code {
+	all: unset;
+	font-family: "IBM Plex Mono", "Courier New", monospace;
+}
+blockquote {
+	border-left: 3px solid var(--accent);
+	padding: 0.2em 0 0.2em 20px;
+	margin: 1.2em 0;
+	font-size: 1.05em;
+	color: rgb(var(--ink-light));
+	font-style: italic;
+}
+hr {
+	border: none;
+	border-top: 1px dashed rgb(var(--rule));
+	margin: 2.5em 0;
+}
+@media (max-width: 720px) {
+	body { font-size: 17px; }
+	main { padding: 1.4em 1em; }
+	h1 { font-size: 2.1em; }
+}
+
+.sr-only {
+	border: 0; padding: 0; margin: 0;
+	position: absolute !important;
+	height: 1px; width: 1px; overflow: hidden;
+	clip: rect(1px 1px 1px 1px);
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	white-space: nowrap;
+}

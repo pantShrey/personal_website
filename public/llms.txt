@@ -1,0 +1,32 @@
+# Shrey Pant
+
+Systems engineer working in Rust and Scala on query execution engines,
+database internals, and concurrent runtimes. B.Tech Computer Science,
+RGIPT (2025).
+
+## Open source
+- Apache DataFusion #21882 : pluggable SpillFile/TempFileFactory abstraction (merged, DataFusion 55.0.0)
+- Apache DataFusion #22230 : SortMergeJoin async spill migration (merged, DataFusion 55.0.0)
+- arrow-rs #9749 : StreamDecoder skip-validation support (merged)
+- ParadeDB #4219 (merged), #4343 : late-materialization pipeline for selective joins/limits
+- ParadeDB #4306 (merged) : dynamic filter pushdown for hash joins
+- ParadeDB #4413 : joinscan memory-pool rework matching Postgres work_mem semantics
+- Cats Effect #4388 : WSTP thread-leak fix; #4352, #4380 : runtime stability fixes (merged)
+- vilcacora : Scala Native ML inference runtime, Typelevel org, GSoC 2025 origin, mentored by Arman Bilge
+- HelixDB #659, #697 (merged) : Tokio core-affinity fix, Podman support
+
+## Experience
+- External Contributor (Compensated), ParadeDB : Feb 2026–present
+- Freelance Developer, HelixDB : Oct–Dec 2025
+- Google Summer of Code 2025, Typelevel (vilcacora) : Jun–Sep 2025
+- Software Engineering Intern, Plotch : Jun–Oct 2024
+
+## Site structure
+- Home (bio + latest writing): /
+- Work (detailed case studies): /work
+- Blog (technical writeups): /blog
+- Resume: /resume, /resume.pdf
+
+## Links
+- GitHub: https://github.com/pantShrey
+- LinkedIn: https://linkedin.com/in/shreypant

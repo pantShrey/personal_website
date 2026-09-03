@@ -1,0 +1,100 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Work | ${SITE_TITLE}`} description="Open source contributions and engineering work by Shrey Pant." />
+	</head>
+	<body>
+		<Header />
+		<main style="width: 700px; max-width: calc(100% - 2em); margin: auto; padding: 3em 1em;">
+			<h1>Work</h1>
+			<p style="color: rgb(var(--ink-light));">
+				What I've actually built or changed, not a bullet list : my <a href="/resume">resume</a> has the condensed version.
+			</p>
+
+			<h2>Apache DataFusion / arrow-rs</h2>
+			<p style="color: rgb(var(--ink-light)); font-size: 0.9em; margin-bottom: 0.3em;">Contributor · Rust · Query execution</p>
+			<p>
+				I work on DataFusion's spill I/O layer : the path that handles queries
+				exceeding memory. Shipped a pluggable <code>SpillFile</code>/<code>TempFileFactory</code>
+				abstraction so spilling can target non-OS backends like Postgres's
+				<code>BufFile</code> or object storage, and migrated SortMergeJoin's
+				spill-read path to fully async streaming. Also added a small API to
+				arrow-rs's <code>StreamDecoder</code> as a dependency of that work.
+			</p>
+			<p>
+				<a href="https://github.com/apache/datafusion/pull/21882">datafusion#21882</a> ·
+				<a href="https://github.com/apache/datafusion/pull/22230">datafusion#22230</a> ·
+				<a href="https://github.com/apache/arrow-rs/pull/9749">arrow-rs#9749</a> ·
+				<a href="/blog/pluggable-spilling-in-datafusion">Full write-up</a>
+			</p>
+
+			<h2>ParadeDB</h2>
+			<p style="color: rgb(var(--ink-light)); font-size: 0.9em; margin-bottom: 0.3em;">Paid external contributor · Rust · Postgres search & vectorized execution</p>
+			<p>
+				Ongoing work on ParadeDB's query execution layer: a late-materialization
+				pipeline that defers string/byte dictionary decoding to cut memory and CPU
+				overhead in selective joins and limits, dynamic filter pushdown for hash
+				joins into the storage pre-filter layer, and a rework of joinscan
+				memory-pool allocation to match Postgres <code>work_mem</code> semantics
+				per-operator-per-partition.
+			</p>
+			<p>
+				<a href="https://github.com/paradedb/paradedb/pull/4219">paradedb#4219</a> ·
+				<a href="https://github.com/paradedb/paradedb/pull/4306">paradedb#4306</a> ·
+				<a href="https://github.com/paradedb/paradedb/pull/4413">paradedb#4413</a>
+			</p>
+
+			<h2>vilcacora</h2>
+			<p style="color: rgb(var(--ink-light)); font-size: 0.9em; margin-bottom: 0.3em;">Maintainer · Scala Native · Cats Effect · ML inference</p>
+			<p>
+				A type-safe Intermediate Representation and ONNX-to-IR translator, with a
+				runtime lowering IR to native Cats Effect <code>IO</code>/<code>Resource</code>
+				values : integrating LibSVM and MLPack via Scala Native FFI with safe
+				native-memory lifecycle management. Started as a Google Summer of Code 2025
+				project with Typelevel, mentored by Arman Bilge; currently adding
+				BERT/transformer support.
+			</p>
+			<p>
+				<a href="https://github.com/pantShrey/vilcacora">github.com/pantShrey/vilcacora</a>
+			</p>
+
+			<h2>Cats Effect</h2>
+			<p style="color: rgb(var(--ink-light)); font-size: 0.9em; margin-bottom: 0.3em;">Contributor · Scala · Runtime & concurrency</p>
+			<p>
+				Diagnosed and contributed a fix toward a WSTP thread-leak causing resource
+				exhaustion in production Scala apps, plus two runtime stability/bug-fix PRs
+				merged to core.
+			</p>
+			<p>
+				<a href="https://github.com/typelevel/cats-effect/pull/4388">cats-effect#4388</a> ·
+				<a href="https://github.com/typelevel/cats-effect/pull/4352">cats-effect#4352</a> ·
+				<a href="https://github.com/typelevel/cats-effect/pull/4380">cats-effect#4380</a>
+			</p>
+
+			<h2>HelixDB</h2>
+			<p style="color: rgb(var(--ink-light)); font-size: 0.9em; margin-bottom: 0.3em;">Freelance · Rust graph-vector database</p>
+			<p>
+				Fixed a CPU core-affinity bug in HelixDB's Tokio runtime integration, added
+				first-class Podman support as an alternative container runtime across the
+				CLI/config/daemon auto-start, and built a containerized orchestration layer
+				plus the official n8n integration bridging workflows with HelixDB's API and
+				MCP endpoints.
+			</p>
+			<p>
+				<a href="https://github.com/HelixDB/helix-db/pull/659">helix-db#659</a> ·
+				<a href="https://github.com/HelixDB/helix-db/pull/697">helix-db#697</a>
+			</p>
+
+			<hr />
+			<p><a href="/blog">Read the writeups</a></p>
+		</main>
+		<Footer />
+	</body>
+</html>

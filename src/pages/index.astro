@@ -1,0 +1,71 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { getCollection } from 'astro:content';
+import FormattedDate from '../components/FormattedDate.astro';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 3);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main style="width: 700px; max-width: calc(100% - 2em); margin: auto; padding: 3em 1em;">
+			<p>
+				HELLO!!
+			</p>
+			<p>
+				I'm Shrey Pant, a systems engineer working on query execution engines,
+				database internals, and concurrent runtimes : mostly in Rust, with some
+				Scala. B.Tech in Computer Science from RGIPT.
+			</p>
+
+			<p>
+				I contribute to <a href="https://github.com/apache/datafusion">Apache
+				DataFusion</a> and <a href="https://github.com/apache/arrow-rs">arrow-rs</a>,
+				and work as a paid external contributor to <a href="https://www.paradedb.com/">ParadeDB</a>, a Rust/Postgres search
+				extension, on vectorized execution and query planning. I also contribute to <a href="https://github.com/typelevel/cats-effect">Cats Effect</a> and
+				maintain <a href="https://github.com/pantShrey/vilcacora">vilcacora</a>, a
+				Scala Native ML inference runtime that started as a Google Summer of Code
+				project with Typelevel, mentored by Arman Bilge.
+			</p>
+
+			<p>
+				Before this I worked on backend and search infrastructure at Plotch, and did
+				freelance systems/infra work for HelixDB, a Rust graph-vector database.
+			</p>
+
+			<p>
+  <a href="/work">Work</a> 
+  <a href="/resume" style="margin-left: 2rem;">Resume</a>
+</p>
+
+
+			<hr />
+
+			<h2 style="font-size: 1.3em;">Latest writing</h2>
+			<ul style="list-style: none; padding: 0;">
+				{
+					posts.map((post) => (
+						<li style="margin-bottom: 0.8em;">
+							<a href={`/blog/${post.id}/`}>{post.data.title}</a>
+							<div style="font-size: 0.85em; color: rgb(var(--ink-light));">
+								<FormattedDate date={post.data.pubDate} />
+							</div>
+						</li>
+					))
+				}
+			</ul>
+			<p><a href="/blog">All posts</a></p>
+		</main>
+		<Footer />
+	</body>
+</html>
