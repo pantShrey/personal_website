@@ -12,12 +12,6 @@ tags:
 
 Hello Everyone, I’m Shrey. I’m writing these posts to document my work and turn individual engineering tasks into stories that I can explain clearly later. This one is about a contribution to Apache DataFusion that started as an extension-point problem and grew into a change spanning the spill abstraction, Arrow IPC, asynchronous reads, memory accounting, and parts of Sort-Merge Join.
 
-What made the contribution valuable was not just the final API. It was the process of finding where the original assumption lived, proposing something that seemed reasonable, having reviewers point out where it would break, and then following those problems through the code until the design became more general.
-
-DataFusion’s spill files were built around local filesystem paths. PostgreSQL’s `BufFile` mechanism does not expose an ordinary path. That became a problem while I was trying to contribute support for `BufFile`-backed spilling to ParadeDB.[ParadeDB #4064][1]
-
-This is the story of how I traced that problem upstream, how the proposed extension point changed, and why the final contribution ended up being more than “replace one file type with a trait.”
-
 ## Summary
 
 The final change introduced three interfaces: `SpillFile`, `SpillWriter`, and `TempFileFactory`. It changed the internal spill type from `RefCountedTempFile` to `Arc<dyn SpillFile>` and allowed `DiskManager` to create backend-specific spill files.
@@ -132,7 +126,7 @@ The byte-source and decoder path could then be asynchronous and push-oriented, w
 
 The asynchronous read path used Arrow’s `StreamDecoder`. The decoder accepts incoming byte chunks and produces decoded record batches. That fit the new spill interface better than opening a synchronous `StreamReader` for each file.
 
-There was one missing Arrow feature. DataFusion controls the IPC data that it writes for its own spill files, so it can use a trusted-input mode that skips validation. At the time, `StreamDecoder` did not expose the same `with_skip_validation` option available in related readers. I opened a separate Arrow change to add it.[arrow-rs #9749][2]
+There was one missing Arrow feature. DataFusion controls the IPC data that it writes for its own spill files, so it can use a trusted-input mode that skips validation. At the time, `StreamDecoder` did not expose the same `with_skip_validation` option available in related readers. I opened a separate Arrow change to add it. [arrow-rs #9749][2]
 
 ```rust
 /// # Safety
@@ -164,8 +158,6 @@ With a push-based decoder, the IPC header arrives as part of the byte stream. Th
 // We check here rather than in new() because schema bytes
 // only arrive after decoding the IPC header from the stream.
 ```
-
-That was a small-looking change, but it was part of converting the read path from “construct a reader and ask it for metadata” to “feed bytes into a decoder and react as data arrives.”
 
 The trade-off was that the asynchronous source produced byte chunks while the decoder maintained its own scratch buffer. The stream temporarily holds the current chunk, and `StreamDecoder` consumes it; when a chunk ends in the middle of an IPC message, the decoder retains the incomplete bytes in its internal scratch buffer and the next poll fetches more data. Compared with the old `StreamReader` path, this introduces extra byte movement or copying, even though it does not mean that every complete chunk is copied wholesale.
 
@@ -384,13 +376,11 @@ An ObjectStore-backed example was developed separately in [DataFusion #23170][6]
 
 The main pluggable-spill change eventually merged as [DataFusion #21882][3]. The separate Sort-Merge Join migration made the core change easier to review, while the object-store example demonstrated how a downstream backend could use the extension point.
 
-I also got a mention in the DataFusion 55 release blog, which was a nice outcome after spending so much time in low-level implementation and review details.
+I also got a mention in the [DataFusion 55 release blog][7], which was a nice outcome after spending so much time in low-level implementation and review details.
 
 ## A small note about the blog
 
-One of the enjoyable parts of this work was not only writing the code. It was triaging the problem, coming up with a solution, finding the places where the solution did not fit, and discussing those details with reviewers and maintainers. The review process changed the API for the better, but it was also genuinely fun to interact with people who care about the same systems problems.
-
-I am writing this as someone who is still early career and building experience as a software engineer and learning how to contribute to large open-source projects. If any part of the explanation is unclear or technically inaccurate, feedback is welcome. If you are interested in Rust, Arrow, query engines, or database internals, the [DataFusion/Arrow Discord][8] is a good place to start.
+I am writing this as someone who is still early career and building experience as a software engineer and learning how to contribute to large open-source projects. If any part of the explanation is unclear or technically inaccurate, feedback is welcome. If you are interested in query engines, or database internals, the [DataFusion/Arrow Discord][8] is a good place to start.
 
 ## References
 
